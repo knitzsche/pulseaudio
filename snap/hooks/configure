@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright (C) 2016 Canonical Ltd
 #
@@ -14,16 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-if [ "$(id -u)" -ne 0 ]; then
-   echo "This script must be run as root" 1>&2
-   exit 1
-fi
+set -x
 
-unset XDG_RUNTIME_DIR
+exec >> $SNAP_COMMON/hook.log 2>&1
+echo "$(date '+%Y-%m-%d %H:%M:%S') $(basename $0): Entering hook"
 
-export HOME=$SNAP_DATA/home
-mkdir -p "$HOME"
+# at the moment nothing to be done here as none of the supported config influences running system
 
-command="$SNAP/$1"
-shift
-exec "$command" "$@"

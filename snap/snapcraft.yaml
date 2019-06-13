@@ -14,26 +14,38 @@ adopt-info: pulseaudio
 base: core
 
 environment:
-  LD_LIBRARY_PATH:           $LD_LIBRARY_PATH:$SNAP/usr/lib/pulseaudio:$SNAP/usr/lib/pulse-8.0/modules/:$SNAP/lib:$SNAP/usr/lib:$SNAP/lib/$SNAPCRAFT_ARCH_TRIPLET:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET
-  PULSE_CLIENTCONFIG:        $SNAP_DATA/etc/pulse/client.conf
+  PATH:                      ${SNAP}/usr/sbin:${SNAP}/usr/bin:${SNAP}/sbin:${SNAP}/bin:${PATH}
+  LD_LIBRARY_PATH:           ${LD_LIBRARY_PATH}:${SNAP}/usr/lib/pulseaudio:${SNAP}/usr/lib/pulse-8.0/modules/:${SNAP}/lib:${SNAP}/usr/lib:${SNAP}/lib/${SNAPCRAFT_ARCH_TRIPLET}:${SNAP}/usr/lib/${SNAPCRAFT_ARCH_TRIPLET}
+  PULSE_DLPATH:              ${SNAP}/usr/lib/pulse-8.0/modules
+  PULSE_CLIENTCONFIG:        ${SNAP_DATA}/etc/pulse/client.conf
   PULSE_RUNTIME_PATH:        /var/run/pulse
   PULSE_SYSTEM:              1
-  PULSE_STATE_PATH:          $SNAP_DATA/state
-  PULSE_SCRIPT:              $SNAP_DATA/etc/pulse/default.pa
-  PULSE_CONFIG:              $SNAP_DATA/etc/pulse/daemon.conf
-  PULSE_CONFIG_PATH:         $SNAP_DATA/var/lib/pulse
-  PULSE_DLPATH:              $SNAP/usr/lib/pulse-8.0/modules
-  PULSE_ALSA_PATHS_DIR:      $SNAP/usr/share/pulseaudio/alsa-mixer
-  ALSA_CONFIG_UCM:           $SNAP/usr/share/alsa/ucm
-  ALSA_CONFIG_TPLG:          $SNAP/usr/share/alsa/topology
-  ALSA_CONFIG_PATH:          $SNAP_DATA/usr/share/alsa/alsa.conf
-  ALSA_MIXER_SIMPLE:         $SNAP_DATA/usr/share/alsa/smixer.conf
-  ALSA_CONFIG_DIR:           $SNAP_DATA/usr/share/alsa/
-  ALSA_CONFIG_UCM_VAR:       $SNAP_DATA/usr/share/alsa/ucm
-  ALSA_CONFIG_TPLG_VAR:      $SNAP_DATA/usr/share/alsa/topology
-  ALSA_PLUGIN_DIR:           $SNAP/usr/lib/alsa-lib
-  ALSA_MIXER_SIMPLE_MODULES: $SNAP/usr/lib/alsa-lib/smixer
-  ALSA_MIXER_SIMPLE_MPYTHON: $SNAP/usr/lib/alsa-lib/smixer/python/main.py
+  PULSE_STATE_PATH:          ${SNAP_DATA}/state
+  PULSE_SCRIPT:              ${SNAP_DATA}/etc/pulse/default.pa
+  PULSE_CONFIG:              ${SNAP_DATA}/etc/pulse/daemon.conf
+  PULSE_CONFIG_PATH:         ${SNAP_DATA}/var/lib/pulse
+  PULSE_ALSA_PATHS_DIR:      ${SNAP_DATA}/usr/share/pulseaudio/alsa-mixer
+  ALSA_CONFIG_UCM:           ${SNAP_DATA}/usr/share/alsa/ucm
+  ALSA_CONFIG_TPLG:          ${SNAP_DATA}/usr/share/alsa/topology
+  ALSA_CONFIG_PATH:          ${SNAP_DATA}/usr/share/alsa/alsa.conf
+  ALSA_MIXER_SIMPLE:         ${SNAP_DATA}/usr/share/alsa/smixer.conf
+  ALSA_CONFIG_DIR:           ${SNAP_DATA}/usr/share/alsa/
+  ALSA_CONFIG_UCM_VAR:       ${SNAP_DATA}/usr/share/alsa/ucm
+  ALSA_CONFIG_TPLG_VAR:      ${SNAP_DATA}/usr/share/alsa/topology
+  ALSA_PLUGIN_DIR:           ${SNAP}/usr/lib/alsa-lib
+  ALSA_MIXER_SIMPLE_MODULES: ${SNAP}/usr/lib/alsa-lib/smixer
+  ALSA_MIXER_SIMPLE_MPYTHON: ${SNAP}/usr/lib/alsa-lib/smixer/python/main.py
+
+environment:
+  LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/usr/lib/pulseaudio:$SNAP/usr/lib/pulse-8.0/modules/
+  PULSE_CLIENTCONFIG: $SNAP_DATA/etc/pulse/client.conf
+  PULSE_RUNTIME_PATH: /var/run/pulse
+  PULSE_SYSTEM: 1
+  PULSE_STATE_PATH:  $SNAP_DATA/state
+  ALSA_CONFIG_UCM:   $SNAP/usr/share/alsa/ucm
+  ALSA_CONFIG_TPLG:  $SNAP/usr/share/alsa/topology
+  ALSA_CONFIG_PATH:  $SNAP_DATA/usr/share/alsa/alsa.conf
+  ALSA_MIXER_SIMPLE: $SNAP_DATA/usr/share/alsa/smixer.conf
 
 apps:
   pulseaudio:
