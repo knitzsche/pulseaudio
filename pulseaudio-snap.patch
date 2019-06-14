@@ -1,7 +1,7 @@
-From e0eaeecf7b028a238c9ba4c8fd15e794eaefc2af Mon Sep 17 00:00:00 2001
+From c4899a668b2279104b9bdd6e06af2143d704d2d4 Mon Sep 17 00:00:00 2001
 From: Ondrej Kubik <ondrej.kubik@canonical.com>
-Date: Fri, 14 Jun 2019 22:01:35 +0100
-Subject: [PATCH] xenial: snap: snap changes
+Date: Fri, 14 Jun 2019 22:02:53 +0100
+Subject: [PATCH] bionic: snap: snap changes
 
 Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
 ---
@@ -11,11 +11,11 @@ Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
  3 files changed, 11 insertions(+), 9 deletions(-)
 
 diff --git a/configure.ac b/configure.ac
-index 9250c05d..f8e7673c 100644
+index 77b5ff5d..4911940c 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -177,7 +177,7 @@ esac
- #### Compiler flags ####
+@@ -182,7 +182,7 @@ AX_CHECK_COMPILE_FLAG([-std=gnu11],
+    [-pedantic -Werror])
  
  AX_APPEND_COMPILE_FLAGS(
 -    [-Wall -W -Wextra -pipe -Wno-long-long -Wno-overlength-strings -Wunsafe-loop-optimizations -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-align -Wstrict-aliasing -Wwrite-strings -Wno-unused-parameter -ffast-math -fno-common -fdiagnostics-show-option -fdiagnostics-color=auto],
@@ -24,7 +24,7 @@ index 9250c05d..f8e7673c 100644
  
  AS_CASE([" $CFLAGS "], [*" -O0 "*], [], [
 diff --git a/src/daemon/main.c b/src/daemon/main.c
-index c2f47b69..f4887554 100644
+index f35252d0..70dccc56 100644
 --- a/src/daemon/main.c
 +++ b/src/daemon/main.c
 @@ -175,16 +175,16 @@ static int change_user(void) {
@@ -51,10 +51,10 @@ index c2f47b69..f4887554 100644
      }
  
 diff --git a/src/modules/alsa/alsa-mixer.c b/src/modules/alsa/alsa-mixer.c
-index 1fe2a024..4cbc8277 100644
+index 986cc7db..e61f3ad0 100644
 --- a/src/modules/alsa/alsa-mixer.c
 +++ b/src/modules/alsa/alsa-mixer.c
-@@ -2529,10 +2529,11 @@ static int path_verify(pa_alsa_path *p) {
+@@ -2505,10 +2505,11 @@ static int path_verify(pa_alsa_path *p) {
  }
  
  static const char *get_default_paths_dir(void) {
@@ -67,7 +67,7 @@ index 1fe2a024..4cbc8277 100644
  }
  
  pa_alsa_path* pa_alsa_path_new(const char *paths_dir, const char *fname, pa_alsa_direction_t direction) {
-@@ -4365,6 +4366,7 @@ pa_alsa_profile_set* pa_alsa_profile_set_new(const char *fname, const pa_channel
+@@ -4343,6 +4344,7 @@ pa_alsa_profile_set* pa_alsa_profile_set_new(const char *fname, const pa_channel
      char *fn;
      int r;
      void *state;
@@ -75,7 +75,7 @@ index 1fe2a024..4cbc8277 100644
  
      static pa_config_item items[] = {
          /* [General] */
-@@ -4409,7 +4411,7 @@ pa_alsa_profile_set* pa_alsa_profile_set_new(const char *fname, const pa_channel
+@@ -4387,7 +4389,7 @@ pa_alsa_profile_set* pa_alsa_profile_set_new(const char *fname, const pa_channel
  
      fn = pa_maybe_prefix_path(fname,
                                pa_run_from_build_tree() ? PA_SRCDIR "/modules/alsa/mixer/profile-sets/" :
