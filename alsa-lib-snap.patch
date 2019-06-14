@@ -1,0 +1,181 @@
+From a763fcf93e6957f9edd8cd49948507d5a0728412 Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Fri, 14 Jun 2019 21:32:14 +0100
+Subject: [PATCH] xenial: snap: snap changes
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ src/alisp/alisp.c     | 3 ++-
+ src/conf.c            | 7 +++++--
+ src/confmisc.c        | 4 ++--
+ src/control/control.c | 7 +++++--
+ src/dlmisc.c          | 7 +++++--
+ src/pcm/pcm.c         | 8 ++++++--
+ src/pcm/pcm_rate.c    | 5 ++++-
+ 7 files changed, 29 insertions(+), 12 deletions(-)
+
+diff --git a/src/alisp/alisp.c b/src/alisp/alisp.c
+index 3c61bb1..1474b97 100644
+--- a/src/alisp/alisp.c
++++ b/src/alisp/alisp.c
+@@ -2399,7 +2399,8 @@ struct alisp_object * F_path(struct alisp_instance *instance, struct alisp_objec
+ 	}
+ 	if (!strcmp(p1->value.s, "data")) {
+ 		delete_tree(instance, p1);
+-		return new_string(instance, ALSA_CONFIG_DIR);
++		const char *config_dir = getenv("ALSA_CONFIG_DIR");
++		return new_string(instance, config_dir ? config_dir : ALSA_CONFIG_DIR );
+ 	}
+ 	delete_tree(instance, p1);
+ 	return &alsa_lisp_nil;
+diff --git a/src/conf.c b/src/conf.c
+index a4f2a4f..29e48a9 100644
+--- a/src/conf.c
++++ b/src/conf.c
+@@ -622,6 +622,9 @@ static int get_delimstring(char **string, int delim, input_t *input);
+ static int get_char_skip_comments(input_t *input)
+ {
+ 	int c;
++	char *config_dir = getenv("ALSA_CONFIG_DIR");
++	if (!config_dir)
++		config_dir = ALSA_CONFIG_DIR;
+ 	while (1) {
+ 		c = get_char(input);
+ 		if (c == '<') {
+@@ -632,12 +635,12 @@ static int get_char_skip_comments(input_t *input)
+ 			if (err < 0)
+ 				return err;
+ 			if (!strncmp(str, "confdir:", 8)) {
+-				char *tmp = malloc(strlen(ALSA_CONFIG_DIR) + 1 + strlen(str + 8) + 1);
++				char *tmp = malloc(strlen(config_dir) + 1 + strlen(str + 8) + 1);
+ 				if (tmp == NULL) {
+ 					free(str);
+ 					return -ENOMEM;
+ 				}
+-				sprintf(tmp, ALSA_CONFIG_DIR "/%s", str + 8);
++				sprintf(tmp, "%s/%s", config_dir, str + 8);
+ 				free(str);
+ 				str = tmp;
+ 			}
+diff --git a/src/confmisc.c b/src/confmisc.c
+index ae0275f..8ca70de 100644
+--- a/src/confmisc.c
++++ b/src/confmisc.c
+@@ -584,11 +584,11 @@ int snd_func_datadir(snd_config_t **dst, snd_config_t *root ATTRIBUTE_UNUSED,
+ {
+ 	int err;
+ 	const char *id;
+-	
++	const char *config_dir = getenv("ALSA_CONFIG_DIR");
+ 	err = snd_config_get_id(src, &id);
+ 	if (err < 0)
+ 		return err;
+-	return snd_config_imake_string(dst, id, ALSA_CONFIG_DIR);
++	return snd_config_imake_string(dst, id, config_dir ? config_dir : ALSA_CONFIG_DIR);
+ }
+ #ifndef DOC_HIDDEN
+ SND_DLSYM_BUILD_VERSION(snd_func_datadir, SND_CONFIG_DLSYM_VERSION_EVALUATE);
+diff --git a/src/control/control.c b/src/control/control.c
+index 4a28cf6..7c92db9 100644
+--- a/src/control/control.c
++++ b/src/control/control.c
+@@ -835,6 +835,9 @@ static int snd_ctl_open_conf(snd_ctl_t **ctlp, const char *name,
+ 	const char *lib = NULL, *open_name = NULL;
+ 	const char *id;
+ 	int (*open_func)(snd_ctl_t **, const char *, snd_config_t *, snd_config_t *, int) = NULL;
++	char *plugin_dir = getenv("ALSA_PLUGIN_DIR");
++	if (!plugin_dir)
++		plugin_dir = ALSA_PLUGIN_DIR;
+ #ifndef PIC
+ 	extern void *snd_control_open_symbols(void);
+ #endif
+@@ -912,13 +915,13 @@ static int snd_ctl_open_conf(snd_ctl_t **ctlp, const char *name,
+ 			build_in++;
+ 		}
+ 		if (*build_in == NULL) {
+-			buf1 = malloc(strlen(str) + sizeof(ALSA_PLUGIN_DIR) + 32);
++			buf1 = malloc(strlen(str) + sizeof(plugin_dir) + 32);
+ 			if (buf1 == NULL) {
+ 				err = -ENOMEM;
+ 				goto _err;
+ 			}
+ 			lib = buf1;
+-			sprintf(buf1, "%s/libasound_module_ctl_%s.so", ALSA_PLUGIN_DIR, str);
++			sprintf(buf1, "%s/libasound_module_ctl_%s.so", plugin_dir, str);
+ 		}
+ 	}
+ #ifndef PIC
+diff --git a/src/dlmisc.c b/src/dlmisc.c
+index b36c48f..b8c4db3 100644
+--- a/src/dlmisc.c
++++ b/src/dlmisc.c
+@@ -74,10 +74,13 @@ void *snd_dlopen(const char *name, int mode)
+ 	 */
+ 	void *handle = NULL;
+ 	char *filename;
++	char *plugin_dir = getenv("ALSA_PLUGIN_DIR");
++	if (!plugin_dir)
++		plugin_dir = ALSA_PLUGIN_DIR;
+ 
+ 	if (name && name[0] != '/') {
+-		filename = malloc(sizeof(ALSA_PLUGIN_DIR) + 1 + strlen(name) + 1);
+-		strcpy(filename, ALSA_PLUGIN_DIR);
++		filename = malloc(sizeof(plugin_dir) + 1 + strlen(name) + 1);
++		strcpy(filename, plugin_dir);
+ 		strcat(filename, "/");
+ 		strcat(filename, name);
+ 		handle = dlopen(filename, mode);
+diff --git a/src/pcm/pcm.c b/src/pcm/pcm.c
+index cbbc55a..60c410f 100644
+--- a/src/pcm/pcm.c
++++ b/src/pcm/pcm.c
+@@ -2117,6 +2117,10 @@ static int snd_pcm_open_conf(snd_pcm_t **pcmp, const char *name,
+ 	int (*open_func)(snd_pcm_t **, const char *, 
+ 			 snd_config_t *, snd_config_t *, 
+ 			 snd_pcm_stream_t, int) = NULL;
++	char *plugin_dir = getenv("ALSA_PLUGIN_DIR");
++	if (!plugin_dir)
++		plugin_dir = ALSA_PLUGIN_DIR;
++
+ #ifndef PIC
+ 	extern void *snd_pcm_open_symbols(void);
+ #endif
+@@ -2197,13 +2201,13 @@ static int snd_pcm_open_conf(snd_pcm_t **pcmp, const char *name,
+ 			build_in++;
+ 		}
+ 		if (*build_in == NULL) {
+-			buf1 = malloc(strlen(str) + sizeof(ALSA_PLUGIN_DIR) + 32);
++			buf1 = malloc(strlen(str) + sizeof(plugin_dir) + 32);
+ 			if (buf1 == NULL) {
+ 				err = -ENOMEM;
+ 				goto _err;
+ 			}
+ 			lib = buf1;
+-			sprintf(buf1, "%s/libasound_module_pcm_%s.so", ALSA_PLUGIN_DIR, str);
++			sprintf(buf1, "%s/libasound_module_pcm_%s.so", plugin_dir, str);
+ 		}
+ 	}
+ #ifndef PIC
+diff --git a/src/pcm/pcm_rate.c b/src/pcm/pcm_rate.c
+index c76db25..ae920bc 100644
+--- a/src/pcm/pcm_rate.c
++++ b/src/pcm/pcm_rate.c
+@@ -1226,11 +1226,14 @@ static int rate_open_func(snd_pcm_rate_t *rate, const char *type, int verbose)
+ 	char open_name[64], lib_name[128], *lib = NULL;
+ 	snd_pcm_rate_open_func_t open_func;
+ 	int err;
++	char *plugin_dir = getenv("ALSA_PLUGIN_DIR");
++	if (!plugin_dir)
++		plugin_dir = ALSA_PLUGIN_DIR;
+ 
+ 	snprintf(open_name, sizeof(open_name), "_snd_pcm_rate_%s_open", type);
+ 	if (!is_builtin_plugin(type)) {
+ 		snprintf(lib_name, sizeof(lib_name),
+-				 "%s/libasound_module_rate_%s.so", ALSA_PLUGIN_DIR, type);
++				 "%s/libasound_module_rate_%s.so", plugin_dir, type);
+ 		lib = lib_name;
+ 	}
+ 	open_func = snd_dlobj_cache_get(lib, open_name, NULL, verbose);
+-- 
+2.20.1
+
