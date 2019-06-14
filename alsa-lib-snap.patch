@@ -1,18 +1,18 @@
-From a763fcf93e6957f9edd8cd49948507d5a0728412 Mon Sep 17 00:00:00 2001
+From 8b830d50b0bbf21343419465dd43c118dab81d50 Mon Sep 17 00:00:00 2001
 From: Ondrej Kubik <ondrej.kubik@canonical.com>
-Date: Fri, 14 Jun 2019 21:32:14 +0100
-Subject: [PATCH] xenial: snap: snap changes
+Date: Fri, 14 Jun 2019 21:30:55 +0100
+Subject: [PATCH] bionic: snap: snap changes
 
 Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
 ---
- src/alisp/alisp.c     | 3 ++-
- src/conf.c            | 7 +++++--
- src/confmisc.c        | 4 ++--
- src/control/control.c | 7 +++++--
- src/dlmisc.c          | 7 +++++--
- src/pcm/pcm.c         | 8 ++++++--
- src/pcm/pcm_rate.c    | 5 ++++-
- 7 files changed, 29 insertions(+), 12 deletions(-)
+ src/alisp/alisp.c     |  3 ++-
+ src/conf.c            | 16 +++++++++++-----
+ src/confmisc.c        |  4 ++--
+ src/control/control.c |  7 +++++--
+ src/dlmisc.c          |  7 +++++--
+ src/pcm/pcm.c         |  8 ++++++--
+ src/pcm/pcm_rate.c    |  5 ++++-
+ 7 files changed, 35 insertions(+), 15 deletions(-)
 
 diff --git a/src/alisp/alisp.c b/src/alisp/alisp.c
 index 3c61bb1..1474b97 100644
@@ -29,10 +29,29 @@ index 3c61bb1..1474b97 100644
  	delete_tree(instance, p1);
  	return &alsa_lisp_nil;
 diff --git a/src/conf.c b/src/conf.c
-index a4f2a4f..29e48a9 100644
+index fbd90ac..ae67a41 100644
 --- a/src/conf.c
 +++ b/src/conf.c
-@@ -622,6 +622,9 @@ static int get_delimstring(char **string, int delim, input_t *input);
+@@ -580,6 +580,9 @@ static int input_stdio_open(snd_input_t **inputp, const char *file,
+ 	struct include_path *path;
+ 	char full_path[PATH_MAX + 1];
+ 	int err = 0;
++	char *config_dir = getenv("ALSA_CONFIG_DIR");
++	if (!config_dir)
++		config_dir = ALSA_CONFIG_DIR;
+ 
+ 	err = snd_input_stdio_open(inputp, file, "r");
+ 	if (err == 0)
+@@ -589,7 +592,7 @@ static int input_stdio_open(snd_input_t **inputp, const char *file,
+ 		return err;
+ 
+ 	/* search file in top configuration directory /usr/share/alsa */
+-	snprintf(full_path, PATH_MAX, "%s/%s", ALSA_CONFIG_DIR, file);
++	snprintf(full_path, PATH_MAX, "%s/%s", config_dir, file);
+ 	err = snd_input_stdio_open(inputp, full_path, "r");
+ 	if (err == 0)
+ 		goto out;
+@@ -737,6 +740,9 @@ static int get_delimstring(char **string, int delim, input_t *input);
  static int get_char_skip_comments(input_t *input)
  {
  	int c;
@@ -42,10 +61,26 @@ index a4f2a4f..29e48a9 100644
  	while (1) {
  		c = get_char(input);
  		if (c == '<') {
-@@ -632,12 +635,12 @@ static int get_char_skip_comments(input_t *input)
- 			if (err < 0)
- 				return err;
+@@ -752,13 +758,13 @@ static int get_char_skip_comments(input_t *input)
+ 				/* directory to search included files */
+ 				char *tmp;
+ 
+-				tmp = malloc(strlen(ALSA_CONFIG_DIR) + 1
++				tmp = malloc(strlen(config_dir) + 1
+ 					     + strlen(str + 10) + 1);
+ 				if (tmp == NULL) {
+ 					free(str);
+ 					return -ENOMEM;
+ 				}
+-				sprintf(tmp, ALSA_CONFIG_DIR "/%s", str + 10);
++				sprintf(tmp, "%s/%s", config_dir, str + 10);
+ 				free(str);
+ 				str = tmp;
+ 
+@@ -781,12 +787,12 @@ static int get_char_skip_comments(input_t *input)
+ 
  			if (!strncmp(str, "confdir:", 8)) {
+ 				/* file in the specified directory */
 -				char *tmp = malloc(strlen(ALSA_CONFIG_DIR) + 1 + strlen(str + 8) + 1);
 +				char *tmp = malloc(strlen(config_dir) + 1 + strlen(str + 8) + 1);
  				if (tmp == NULL) {
@@ -56,9 +91,9 @@ index a4f2a4f..29e48a9 100644
 +				sprintf(tmp, "%s/%s", config_dir, str + 8);
  				free(str);
  				str = tmp;
- 			}
+ 				err = snd_input_stdio_open(&in, str, "r");
 diff --git a/src/confmisc.c b/src/confmisc.c
-index ae0275f..8ca70de 100644
+index a985f14..86e98a3 100644
 --- a/src/confmisc.c
 +++ b/src/confmisc.c
 @@ -584,11 +584,11 @@ int snd_func_datadir(snd_config_t **dst, snd_config_t *root ATTRIBUTE_UNUSED,
@@ -76,10 +111,10 @@ index ae0275f..8ca70de 100644
  #ifndef DOC_HIDDEN
  SND_DLSYM_BUILD_VERSION(snd_func_datadir, SND_CONFIG_DLSYM_VERSION_EVALUATE);
 diff --git a/src/control/control.c b/src/control/control.c
-index 4a28cf6..7c92db9 100644
+index 134ba4c..038c0f0 100644
 --- a/src/control/control.c
 +++ b/src/control/control.c
-@@ -835,6 +835,9 @@ static int snd_ctl_open_conf(snd_ctl_t **ctlp, const char *name,
+@@ -1254,6 +1254,9 @@ static int snd_ctl_open_conf(snd_ctl_t **ctlp, const char *name,
  	const char *lib = NULL, *open_name = NULL;
  	const char *id;
  	int (*open_func)(snd_ctl_t **, const char *, snd_config_t *, snd_config_t *, int) = NULL;
@@ -89,7 +124,7 @@ index 4a28cf6..7c92db9 100644
  #ifndef PIC
  	extern void *snd_control_open_symbols(void);
  #endif
-@@ -912,13 +915,13 @@ static int snd_ctl_open_conf(snd_ctl_t **ctlp, const char *name,
+@@ -1331,13 +1334,13 @@ static int snd_ctl_open_conf(snd_ctl_t **ctlp, const char *name,
  			build_in++;
  		}
  		if (*build_in == NULL) {
@@ -126,10 +161,10 @@ index b36c48f..b8c4db3 100644
  		strcat(filename, name);
  		handle = dlopen(filename, mode);
 diff --git a/src/pcm/pcm.c b/src/pcm/pcm.c
-index cbbc55a..60c410f 100644
+index 0cf740f..1538989 100644
 --- a/src/pcm/pcm.c
 +++ b/src/pcm/pcm.c
-@@ -2117,6 +2117,10 @@ static int snd_pcm_open_conf(snd_pcm_t **pcmp, const char *name,
+@@ -2346,6 +2346,10 @@ static int snd_pcm_open_conf(snd_pcm_t **pcmp, const char *name,
  	int (*open_func)(snd_pcm_t **, const char *, 
  			 snd_config_t *, snd_config_t *, 
  			 snd_pcm_stream_t, int) = NULL;
@@ -140,7 +175,7 @@ index cbbc55a..60c410f 100644
  #ifndef PIC
  	extern void *snd_pcm_open_symbols(void);
  #endif
-@@ -2197,13 +2201,13 @@ static int snd_pcm_open_conf(snd_pcm_t **pcmp, const char *name,
+@@ -2426,13 +2430,13 @@ static int snd_pcm_open_conf(snd_pcm_t **pcmp, const char *name,
  			build_in++;
  		}
  		if (*build_in == NULL) {
@@ -157,10 +192,10 @@ index cbbc55a..60c410f 100644
  	}
  #ifndef PIC
 diff --git a/src/pcm/pcm_rate.c b/src/pcm/pcm_rate.c
-index c76db25..ae920bc 100644
+index 1f830dd..eb693d7 100644
 --- a/src/pcm/pcm_rate.c
 +++ b/src/pcm/pcm_rate.c
-@@ -1226,11 +1226,14 @@ static int rate_open_func(snd_pcm_rate_t *rate, const char *type, int verbose)
+@@ -1244,11 +1244,14 @@ static int rate_open_func(snd_pcm_rate_t *rate, const char *type, int verbose)
  	char open_name[64], lib_name[128], *lib = NULL;
  	snd_pcm_rate_open_func_t open_func;
  	int err;
