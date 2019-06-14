@@ -1,0 +1,89 @@
+From e0eaeecf7b028a238c9ba4c8fd15e794eaefc2af Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Fri, 14 Jun 2019 22:01:35 +0100
+Subject: [PATCH] xenial: snap: snap changes
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ configure.ac                  |  2 +-
+ src/daemon/main.c             | 12 ++++++------
+ src/modules/alsa/alsa-mixer.c |  6 ++++--
+ 3 files changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 9250c05d..f8e7673c 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -177,7 +177,7 @@ esac
+ #### Compiler flags ####
+ 
+ AX_APPEND_COMPILE_FLAGS(
+-    [-Wall -W -Wextra -pipe -Wno-long-long -Wno-overlength-strings -Wunsafe-loop-optimizations -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-align -Wstrict-aliasing -Wwrite-strings -Wno-unused-parameter -ffast-math -fno-common -fdiagnostics-show-option -fdiagnostics-color=auto],
++    [-Wall -W -Wextra -pipe -Wno-long-long -Wno-overlength-strings -Wunsafe-loop-optimizations -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-align -Wstrict-aliasing -Wwrite-strings -Wno-unused-parameter -ffast-math -fno-common -fdiagnostics-show-option -fdiagnostics-color=auto -fomit-frame-pointer],
+     [], [-pedantic -Werror])
+ 
+ AS_CASE([" $CFLAGS "], [*" -O0 "*], [], [
+diff --git a/src/daemon/main.c b/src/daemon/main.c
+index c2f47b69..f4887554 100644
+--- a/src/daemon/main.c
++++ b/src/daemon/main.c
+@@ -175,16 +175,16 @@ static int change_user(void) {
+         return -1;
+     }
+ 
+-    if (!pa_streq(pw->pw_dir, PA_SYSTEM_RUNTIME_PATH))
+-        pa_log_warn(_("Home directory of user '%s' is not '%s', ignoring."), PA_SYSTEM_USER, PA_SYSTEM_RUNTIME_PATH);
++    if (!pa_streq(pw->pw_dir, getenv("PULSE_RUNTIME_PATH")))
++        pa_log_warn(_("Home directory of user '%s' is not '%s', ignoring."), PA_SYSTEM_USER, getenv("PULSE_RUNTIME_PATH"));
+ 
+-    if (pa_make_secure_dir(PA_SYSTEM_RUNTIME_PATH, 0755, pw->pw_uid, gr->gr_gid, true) < 0) {
+-        pa_log(_("Failed to create '%s': %s"), PA_SYSTEM_RUNTIME_PATH, pa_cstrerror(errno));
++    if (pa_make_secure_dir(getenv("PULSE_RUNTIME_PATH"), 0755, pw->pw_uid, gr->gr_gid, true) < 0) {
++        pa_log(_("Failed to create '%s': %s"), getenv("PULSE_RUNTIME_PATH"), pa_cstrerror(errno));
+         return -1;
+     }
+ 
+-    if (pa_make_secure_dir(PA_SYSTEM_STATE_PATH, 0700, pw->pw_uid, gr->gr_gid, true) < 0) {
+-        pa_log(_("Failed to create '%s': %s"), PA_SYSTEM_STATE_PATH, pa_cstrerror(errno));
++    if (pa_make_secure_dir(getenv("PULSE_STATE_PATH"), 0700, pw->pw_uid, gr->gr_gid, true) < 0) {
++        pa_log(_("Failed to create '%s': %s"), getenv("PULSE_STATE_PATH"), pa_cstrerror(errno));
+         return -1;
+     }
+ 
+diff --git a/src/modules/alsa/alsa-mixer.c b/src/modules/alsa/alsa-mixer.c
+index 1fe2a024..4cbc8277 100644
+--- a/src/modules/alsa/alsa-mixer.c
++++ b/src/modules/alsa/alsa-mixer.c
+@@ -2529,10 +2529,11 @@ static int path_verify(pa_alsa_path *p) {
+ }
+ 
+ static const char *get_default_paths_dir(void) {
++    const char *alsa_paths_dir = getenv("PULSE_ALSA_PATHS_DIR");
+     if (pa_run_from_build_tree())
+         return PA_SRCDIR "/modules/alsa/mixer/paths/";
+     else
+-        return PA_ALSA_PATHS_DIR;
++        return alsa_paths_dir ? alsa_paths_dir : PA_ALSA_PATHS_DIR;
+ }
+ 
+ pa_alsa_path* pa_alsa_path_new(const char *paths_dir, const char *fname, pa_alsa_direction_t direction) {
+@@ -4365,6 +4366,7 @@ pa_alsa_profile_set* pa_alsa_profile_set_new(const char *fname, const pa_channel
+     char *fn;
+     int r;
+     void *state;
++    const char *alsa_profile_sets_dir = getenv("PULSE_ALSA_PROFILE_SETS_DIR");
+ 
+     static pa_config_item items[] = {
+         /* [General] */
+@@ -4409,7 +4411,7 @@ pa_alsa_profile_set* pa_alsa_profile_set_new(const char *fname, const pa_channel
+ 
+     fn = pa_maybe_prefix_path(fname,
+                               pa_run_from_build_tree() ? PA_SRCDIR "/modules/alsa/mixer/profile-sets/" :
+-                              PA_ALSA_PROFILE_SETS_DIR);
++                              alsa_profile_sets_dir ? alsa_profile_sets_dir : PA_ALSA_PROFILE_SETS_DIR);
+ 
+     r = pa_config_parse(fn, NULL, items, NULL, false, ps);
+     pa_xfree(fn);
+-- 
+2.20.1
+
