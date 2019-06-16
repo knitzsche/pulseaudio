@@ -1,5 +1,4 @@
 name: pulseaudio
-version: 8.0-4
 summary: PulseAudio sound server
 description: |
   PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -35,17 +34,6 @@ environment:
   ALSA_PLUGIN_DIR:           ${SNAP}/usr/lib/alsa-lib
   ALSA_MIXER_SIMPLE_MODULES: ${SNAP}/usr/lib/alsa-lib/smixer
   ALSA_MIXER_SIMPLE_MPYTHON: ${SNAP}/usr/lib/alsa-lib/smixer/python/main.py
-
-environment:
-  LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/usr/lib/pulseaudio:$SNAP/usr/lib/pulse-8.0/modules/
-  PULSE_CLIENTCONFIG: $SNAP_DATA/etc/pulse/client.conf
-  PULSE_RUNTIME_PATH: /var/run/pulse
-  PULSE_SYSTEM: 1
-  PULSE_STATE_PATH:  $SNAP_DATA/state
-  ALSA_CONFIG_UCM:   $SNAP/usr/share/alsa/ucm
-  ALSA_CONFIG_TPLG:  $SNAP/usr/share/alsa/topology
-  ALSA_CONFIG_PATH:  $SNAP_DATA/usr/share/alsa/alsa.conf
-  ALSA_MIXER_SIMPLE: $SNAP_DATA/usr/share/alsa/smixer.conf
 
 apps:
   pulseaudio:
@@ -92,11 +80,15 @@ parts:
 
   alsa-lib:
     plugin: autotools
-
-    source: https://git.launchpad.net/~snappy-hwe-team/snappy-hwe-snaps/+git/pulseaudio
+    source: https://git.launchpad.net/ubuntu/+source/alsa-lib
     source-type: git
-    source-branch: alsa-lib/xenial/1.1.0
-
+    source-branch: ubuntu/xenial
+    override-pull: |
+      snapcraftctl pull
+      rm -rf manual
+      [ -z "${SNAPCRAFT_PROJECT_DIR}" ] && SNAPCRAFT_PROJECT_DIR="../../.."
+      quilt push -afq --leave-rejects --quiltrc=${SNAPCRAFT_PROJECT_DIR}/quiltrc
+      git apply ${SNAPCRAFT_PROJECT_DIR}/alsa-lib-snap.patch
     configflags:
       - --prefix=/usr
       - --sysconfdir=/etc
@@ -116,13 +108,17 @@ parts:
   pulseaudio:
     after:
       - alsa-lib
-
     plugin: autotools
-
-    source: https://git.launchpad.net/~snappy-hwe-team/snappy-hwe-snaps/+git/pulseaudio
+    source: https://git.launchpad.net/ubuntu/+source/pulseaudio
     source-type: git
-    source-branch: pulseaudio/8.0
-
+    source-branch: ubuntu/xenial
+    override-pull: |
+      snapcraftctl pull
+      snapcraftctl set-version $(git describe --tags | cut -c 19-)
+      rm -rf manual
+      [ -z "${SNAPCRAFT_PROJECT_DIR}" ] && SNAPCRAFT_PROJECT_DIR="../../.."
+      quilt push -afq --leave-rejects --quiltrc=../../../quiltrc
+      git apply ${SNAPCRAFT_PROJECT_DIR}/pulseaudio-snap.patch
     build-packages:
       - intltool
       - libasound2-dev
@@ -140,7 +136,8 @@ parts:
       - libudev-dev
       - libasyncns-dev
       - libxcb1-dev
-
+      - libsbc-dev
+      - quilt
     configflags:
       - --prefix=/usr
       - --sysconfdir=/etc
