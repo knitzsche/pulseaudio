@@ -10,12 +10,12 @@ description: |
 grade: stable
 confinement: strict
 adopt-info: pulseaudio
-base: core
+base: core18
 
 environment:
   PATH:                      ${SNAP}/usr/sbin:${SNAP}/usr/bin:${SNAP}/sbin:${SNAP}/bin:${PATH}
-  LD_LIBRARY_PATH:           ${LD_LIBRARY_PATH}:${SNAP}/usr/lib/pulseaudio:${SNAP}/usr/lib/pulse-8.0/modules/:${SNAP}/lib:${SNAP}/usr/lib:${SNAP}/lib/${SNAPCRAFT_ARCH_TRIPLET}:${SNAP}/usr/lib/${SNAPCRAFT_ARCH_TRIPLET}
-  PULSE_DLPATH:              ${SNAP}/usr/lib/pulse-8.0/modules
+  LD_LIBRARY_PATH:           ${LD_LIBRARY_PATH}:${SNAP}/usr/lib/pulseaudio:${SNAP}/usr/lib/pulse-11.1/modules/:${SNAP}/lib:${SNAP}/usr/lib:${SNAP}/lib/${SNAPCRAFT_ARCH_TRIPLET}:${SNAP}/usr/lib/${SNAPCRAFT_ARCH_TRIPLET}
+  PULSE_DLPATH:              ${SNAP}/usr/lib/pulse-11.1/modules
   PULSE_CLIENTCONFIG:        ${SNAP_DATA}/etc/pulse/client.conf
   PULSE_RUNTIME_PATH:        /var/run/pulse
   PULSE_SYSTEM:              1
@@ -82,7 +82,7 @@ parts:
     plugin: autotools
     source: https://git.launchpad.net/ubuntu/+source/alsa-lib
     source-type: git
-    source-branch: ubuntu/xenial
+    source-branch: ubuntu/bionic
     override-pull: |
       snapcraftctl pull
       rm -rf manual
@@ -99,11 +99,9 @@ parts:
       - --disable-silent-rules
       - --disable-static
       - --disable-python
-    stage:
-      - usr/lib/libasound.so*
-      - usr/lib/alsa-lib
+    prime:
+      - usr/lib
       - usr/share/alsa
-
 
   pulseaudio:
     after:
@@ -111,7 +109,7 @@ parts:
     plugin: autotools
     source: https://git.launchpad.net/ubuntu/+source/pulseaudio
     source-type: git
-    source-branch: ubuntu/xenial
+    source-branch: ubuntu/bionic
     override-pull: |
       snapcraftctl pull
       snapcraftctl set-version $(git describe --tags | cut -c 19-)
@@ -181,6 +179,8 @@ parts:
       - libxdmcp6
       - libxau6
       - libsbc1
+      - libx11-6
+      - libx11-xcb1
       - jq
     stage:
       - etc
@@ -195,13 +195,14 @@ parts:
       - usr/share/pulseaudio
 
   # part to simulate pulseaudio and alsa dependencies, to trigger auto builds
-  # as we build from source,we don't actually consume binaries
+  # as we build from source,we don't actually consume binaries except libasound2-plugins
   dummy-pulse:
     plugin: nil
     stage-packages:
       - pulseaudio
       - libasound2
+      - libasound2-plugin-smixer
+    organize:
+       usr/lib/*/alsa-lib/: usr/lib/
     stage:
-      - -*
-    prime:
-      - -*
+      - usr/lib/alsa-lib

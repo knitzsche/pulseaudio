@@ -25,6 +25,6 @@ $SNAP/usr/bin/pulseaudio \
     --disallow-module-loading \
     --system \
     -F ${SNAP_DATA}/etc/pulse/default.pa \
-    -p ${SNAP}/usr/lib/pulse-8.0/modules \
+    -p ${SNAP}/usr/lib/pulse-11.1/modules \
     -n \
     $EXTRA_ARGS
