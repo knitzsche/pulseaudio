@@ -14,10 +14,188 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-set -x
+if [ -e $SNAP_DATA/config/debug ] ; then
+    DEBUG=1
+    set -x
+fi
 
 exec >> $SNAP_COMMON/hook.log 2>&1
 echo "$(date '+%Y-%m-%d %H:%M:%S') $(basename $0): Entering hook"
 
-# at the moment nothing to be done here as none of the supported config influences running system
+# traverse in three directories
+# -etc/pulse
+# -usr/share/alsa
+# -usr/share/pulseaudio
+# when file config is reached, it has three values, filaname, remove and add
+# - filename: is relative file path, without $SNAP_DATA part
+# - remove: list of strings to be removed from given file
+#            this can be multi line value, each line is process separatelly
+# - add: list of strings to be appended to given file
+#            this could be multi line value, all lines are appended to config file
+# - replace: list of pairs match replace values, values on separate lines
+#            at least two lines needed match <> replace
+#
+# example:
+# snap set pulseaudio etc.pulse.default-pa='{"filename": "etc/pulse/default.pa", "remove": "", "add": "load-module module-alsa-sink device=hw:0,0\nload-module module-alsa-source device=hw:0,1"}'
+# snap set pulseaudio etc.pulse='{"daemon-conf": { "filename": "etc/pulse/daemon.conf", "remove": "", "add": "" }, "default-pa": { "filename": "etc/pulse/default.pa", "remove": "", "add": "load-module module-alsa-sink device=hw:0,0\nload-module module-alsa-source device=hw:0,1"}'
+# snap set pulseaudio etc.pulse='{"daemon-conf": { "filename": "etc/pulse/daemon.conf", "remove": "", "add": "" }, "default-pa": { "filename": "etc/pulse/default.pa", "remove": "load-module module-alsa-sink device=.*\nload-module module-alsa-source device=.*", "add": "load-module module-alsa-sink device=hw:0,0\nload-module module-alsa-source device=hw:0,1"}}'
+# snap set pulseaudio etc.pulse.default-pa='{"filename": "etc/pulse/default.pa", "replace": ".*load-module module-alsa-sink.*\nload-module module-alsa-sink device=hw:0,0\n.*load-module module-alsa-source.*\nload-module module-alsa-source device=hw:0,1"}'
+# providing way to alter configuration files through snap set command
+# not full example of supported config options
+# {
+#   "etc": {
+#     "pulse": {
+#       "client-conf": {
+#         "filename": "etc/pulse/client.conf",
+#         "replace": ""
+#         "remove": "",
+#         "add": ""
+#       },
+#       "daemon-conf": {
+#         "filename": "etc/pulse/daemon.conf",
+#         "remove": "",
+#         "add": ""
+#       },
+#       "default-pa": {
+#         "filename": "etc/pulse/default.pa",
+#         "replace": ".*load-module module-alsa-sink.*\nload-module module-alsa-sink device=hw:0,0\n.*load-module module-alsa-source.*\nload-module module-alsa-source device=hw:0,1",
+#         "remove": "load-module module-alsa-sink device=.*\nload-module module-alsa-source device=.*",
+#         "add": "load-module module-alsa-sink device=hw:0,0\nload-module module-alsa-source device=hw:0,1"
+#       },
+#       "system-pa": {
+#         "filename": "etc/pulse/system.pa",
+#         "remove": "",
+#         "add": ""
+#       }
+#     }
+#   },
+#   "usr": {
+#     "share": {
+#       "alsa": {
+#         "alsa-conf": {
+#           "filename": "usr/share/alsa/alsa.conf",
+#           "remove": "",
+#           "add": ""
+#         },
+#         "topology": {
+#           "broadwell": {
+#             "filename": "usr/share/alsa/topology/broadwell/broadwell.conf",
+#             "remove": "",
+#             "add": ""
+#           }
+#         }
+#       },
+#       "pulseaudio": {
+#         "alsa-mixer": {
+#           "paths": {
+#             "analog-output-conf": {
+#               "filename": "usr/share/pulseaudio/alsa-mixer/paths/analog-output.conf",
+#               "remove": "",
+#               "add": ""
+#             }
+#           },
+#           "profile-sets": {
+#             "default-conf": {
+#               "filename": "usr/share/pulseaudio/alsa-mixer/profile-sets/default.conf",
+#               "remove": "",
+#               "add": ""
+#             }
+#           }
+#         }
+#       }
+#     }
+#   }
+# }
 
+process_file_remove() {
+  filename="${1}"
+  shift
+  remove="${@}"
+  if [ -n "${remove}" ]; then
+    # remove all matching lines from config, there could be more patterns, process by lines
+    while read -r line
+    do
+      if [ -n "${line}" ]; then
+        echo "removing from [${filename}] strings [$line]"
+        sed -i "s/$(echo ${line} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')//g" ${SNAP_DATA}/${filename}
+      fi
+    done < <(echo "${remove}")
+  fi
+}
+
+process_file_add() {
+  filename="${1}"
+  shift
+  add="${@}"
+  if [ -n "${add}" ]; then
+    echo "adding from [${filename}] strings [$add]"
+    [ "${DEBUG}" = "1" ] && echo -e "\n# start: added by snap configure" >> ${SNAP_DATA}/${filename}
+    echo "${add}" >> ${SNAP_DATA}/${filename}
+    [ "${DEBUG}" = "1" ] &&  echo -e "# end: added by snap configure" >> ${SNAP_DATA}/${filename}
+  fi
+}
+
+process_file_replace() {
+  filename="${1}"
+  shift
+  if [ -n "${@}" ]; then
+    # we need to process two lines at the time, first line is match, following line is replacing value
+    while read -r match
+    do
+      read -r replace
+      if [ -n "${match}" ] && [ -n "${replace}" ]; then
+        echo "replace from [${filename}] string [${match}] with [${replace}]"
+        sed -i "s/$(echo ${match} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')/$(echo ${replace} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')/g" ${SNAP_DATA}/${filename}
+      fi
+    done < <(echo "${@}")
+  fi
+}
+
+process_line() {
+  [ "${DEBUG}" = "1" ] && echo "process_line << $@"
+  # each line starts with key name and end with variable
+  local key=$1
+  shift
+  # check if we have valid json in first place
+  if ! jq -e . >/dev/null 2>&1 <<<"$@"; then
+    type -p handle_key_value && handle_key_value ${key} $@
+    return
+  fi
+  filename=$(echo $@ | jq -r '.filename')
+  # if we have filename, no need to traverse further
+  if [ "${filename}" == "null" ]; then
+      type -p processing_top_key_start && processing_top_key_start ${key}
+      while read -r line
+      do
+          process_line ${key}.${line}
+      done < <(echo "$@" | jq -r 'keys[] as $k | "\($k) \(.[$k] )"')
+      type -p processing_top_key_end && processing_top_key_end ${key}
+  else
+      ADD=$(echo $@ | jq -r '.add')
+      [ "${ADD}" == "null" ] && ADD=""
+      REMOVE=$(echo $@ | jq -r '.remove')
+      [ "${REMOVE}" == "null" ] && REMOVE=""
+      REPLACE=$(echo $@ | jq -r '.replace')
+      [ "${REPLACE}" == "null" ] && REPLACE=""
+      type -p process_file_replace && process_file_replace "${filename}" "${REPLACE}"
+      type -p process_file_remove && process_file_remove "${filename}" "${REMOVE}"
+      type -p process_file_add    && process_file_add    "${filename}" "${ADD}"
+  fi
+}
+
+CONFIGURATION="etc usr"
+
+echo "Process config changes"
+
+for conf in $CONFIGURATION
+do
+  [ "${DEBUG}" = "1" ] && echo "processing: ${conf}"
+  # only process if we get valid json
+  key_val=$(snapctl get -d "${conf}")
+  if jq -e . >/dev/null 2>&1 <<<"${key_val}"; then
+    process_line $(jq -r 'keys[] as $k | "\($k) \(.[$k] )"' <<< $(snapctl get -d ${conf}))
+  fi
+done
+
+# restart pulse service
+snapctl restart ${SNAP_INSTANCE_NAME}.pulseaudio

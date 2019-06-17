@@ -26,3 +26,8 @@ mkdir -p ${SNAP_DATA}/usr/share
 cp -r -n ${SNAP}/etc/pulse            ${SNAP_DATA}/etc
 cp -r -n ${SNAP}/usr/share/alsa       ${SNAP_DATA}/usr/share
 cp -r -n ${SNAP}/usr/share/pulseaudio ${SNAP_DATA}/usr/share
+
+# clean snapctl as we cannot do it from configure hooks
+# so we not repeaase same steps again
+snapctl set env=""
+snapctl set usr=""

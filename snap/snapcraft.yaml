@@ -184,6 +184,7 @@ parts:
       - libxdmcp6
       - libxau6
       - libsbc1
+      - jq
     stage:
       - etc
       - lib
@@ -192,5 +193,6 @@ parts:
       - usr/bin/paplay
       - usr/bin/parec
       - usr/bin/pulseaudio
+      - usr/bin/jq
       - usr/lib
       - usr/share/pulseaudio
