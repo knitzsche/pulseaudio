@@ -11,6 +11,14 @@ if [ -e $SNAP_DATA/config/debug ] ; then
     export LIBASOUND_DEBUG=1
 fi
 
+# on some hw, hw requires init steps before pulseaudio can be started
+# as we do not have socket activated service yet, add optional delayed start
+DELAY=$(snapctl get pulseaudio.delay-service)
+if [ -n "${DELAY}" ]; then
+  # ignore any error is delay is boggus number
+  sleep ${DELAY} || true
+fi
+
 $SNAP/usr/bin/pulseaudio \
     --exit-idle-time=-1 \
     --disallow-exit=yes \
