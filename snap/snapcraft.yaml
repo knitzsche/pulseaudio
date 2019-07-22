@@ -37,6 +37,10 @@ environment:
 
 apps:
   pulseaudio:
+    after:
+      - record-music
+      - play-music
+      - init-speaker
     command: bin/pulseaudio
     daemon: simple
     slots:
@@ -64,6 +68,35 @@ apps:
 
   config:
     command: bin/config
+
+  init-speaker:
+    command: bin/init-speaker.sh
+    adapter: none
+    daemon: oneshot
+    plugs:
+      - i2c
+      - mt-gpio
+
+  play-music:
+    after:
+      - init-speaker
+    command: bin/play_music.sh
+    adapter: none
+    daemon: oneshot
+    plugs:
+      - i2c
+
+  record-music:
+    after:
+      - init-speaker
+      - play-music
+    command: bin/record_music.sh
+    adapter: none
+    daemon: oneshot
+    plugs:
+      - i2c
+      - gpio
+
 
 slots:
   service:
@@ -206,3 +239,18 @@ parts:
        usr/lib/*/alsa-lib/: usr/lib/
     stage:
       - usr/lib/alsa-lib
+
+  # init hw scripts
+  scripts:
+    plugin: dump
+    source: scripts
+    stage-packages:
+      - to armhf:
+        - i2c-tools:armhf
+      - to arm64:
+        - i2c-tools:arm64
+    stage:
+      - bin
+      - usr/sbin/i2c*
+      - usr/lib/arm-linux-gnueabihf/libi2*
+      - usr/lib/aarch64-linux*/libi2*
