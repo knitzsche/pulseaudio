@@ -37,14 +37,28 @@ environment:
 
 apps:
   pulseaudio:
-    after:
-      - record-music
-      - play-music
-      - init-speaker
+          #after:
+          #- record-music
+          #- play-music
+          #- init-speaker
     command: bin/pulseaudio
     daemon: simple
     slots:
       - service
+
+  alsamixer:
+    command: usr/bin/alsamixer 
+    plugs: [ client, network, alsa ]
+
+  amixer:
+    command: usr/bin/amixer 
+    plugs: [ client, network, alsa ]
+  aplay:
+    command: usr/bin/aplay
+    plugs: [ client, network, alsa ]
+  pacmd:
+    command: bin/client-wrapper usr/bin/pacmd
+    plugs: [ client, network ]
 
   pactl:
     command: bin/client-wrapper usr/bin/pactl
@@ -69,33 +83,33 @@ apps:
   config:
     command: bin/config
 
-  init-speaker:
-    command: bin/init-speaker.sh
-    adapter: none
-    daemon: oneshot
-    plugs:
-      - i2c
-      - mt-gpio
+    #  init-speaker:
+    #command: bin/init-speaker.sh
+    #adapter: none
+    #daemon: oneshot
+    #plugs:
+    #  - i2c
+    #  - gpio
 
-  play-music:
-    after:
-      - init-speaker
-    command: bin/play_music.sh
-    adapter: none
-    daemon: oneshot
-    plugs:
-      - i2c
+    #play-music:
+    #after:
+    #  - init-speaker
+    #command: bin/play_music.sh
+    #adapter: none
+    #daemon: oneshot
+    #plugs:
+    #  - i2c
 
-  record-music:
-    after:
-      - init-speaker
-      - play-music
-    command: bin/record_music.sh
-    adapter: none
-    daemon: oneshot
-    plugs:
-      - i2c
-      - gpio
+    # record-music:
+    #after:
+    #  - init-speaker
+    #  - play-music
+    #command: bin/record_music.sh
+    #adapter: none
+    #daemon: oneshot
+    #plugs:
+    #  - i2c
+    #  - gpio
 
 
 slots:
@@ -132,9 +146,11 @@ parts:
       - --disable-silent-rules
       - --disable-static
       - --disable-python
-    prime:
-      - usr/lib
-      - usr/share/alsa
+    stage-packages:
+      - alsa-utils
+        #prime:
+        #- usr/lib
+        #- usr/share/alsa
 
   pulseaudio:
     after:
@@ -226,13 +242,16 @@ parts:
       - usr/bin/jq
       - usr/lib
       - usr/share/pulseaudio
+      - usr/share/bash-completion/completions/pacmd
+      - usr/bin/pacmd
+
 
   # part to simulate pulseaudio and alsa dependencies, to trigger auto builds
   # as we build from source,we don't actually consume binaries except libasound2-plugins
   dummy-pulse:
     plugin: nil
     stage-packages:
-      - pulseaudio
+            #- pulseaudio
       - libasound2
       - libasound2-plugin-smixer
     organize:
@@ -244,11 +263,11 @@ parts:
   scripts:
     plugin: dump
     source: scripts
-    stage-packages:
-      - to armhf:
-        - i2c-tools:armhf
-      - to arm64:
-        - i2c-tools:arm64
+    #stage-packages:
+    #  - to armhf:
+    #    - i2c-tools:armhf
+    #  - to arm64:
+    #    - i2c-tools:arm64
     stage:
       - bin
       - usr/sbin/i2c*
