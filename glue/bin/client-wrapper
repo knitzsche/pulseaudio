@@ -15,14 +15,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 if [ "$(id -u)" -ne 0 ]; then
-   echo "This script must be run as root" 1>&2
+   echo "This script ${0} must be run as root" 1>&2
    exit 1
 fi
 
+#because we pulse in --system mode
 unset XDG_RUNTIME_DIR
 
-export HOME=$SNAP_DATA/home
-mkdir -p "$HOME"
+# this is odd since the snap has a home plug
+#export HOME=$SNAP_DATA/home
+#mkdir -p "$HOME"
 
 command="$SNAP/$1"
 shift
