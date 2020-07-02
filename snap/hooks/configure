@@ -20,7 +20,8 @@ if [ -e $SNAP_DATA/config/debug ] ; then
 fi
 
 exec >> $SNAP_COMMON/hook.log 2>&1
-echo "$(date '+%Y-%m-%d %H:%M:%S') $(basename $0): Entering hook"
+dt=$(date '+%Y-%m-%d %H:%M:%S')
+echo "$dt $(basename $0): Entering hook"
 
 # traverse in three directories
 # -etc/pulse
