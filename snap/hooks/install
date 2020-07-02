@@ -19,10 +19,13 @@ set -x
 exec >> $SNAP_COMMON/hook.log 2>&1
 echo "$(date '+%Y-%m-%d %H:%M:%S') $(basename $0): Entering hook"
 
+# stop daemon (and start it in connect hook)
+#snapctl stop pulseaudio.pulseaudio --disable
+
 # copy initial client configuration
 mkdir -p ${SNAP_DATA}/var/lib/pulse
 mkdir -p ${SNAP_DATA}/etc
-mkdir -p ${SNAP_DATA}/usr/share
+mkdir -p ${SNAP_DATA}/usr/share/applications
 
 cp -r ${SNAP}/etc/pulse            ${SNAP_DATA}/etc
 cp -r ${SNAP}/usr/share/alsa       ${SNAP_DATA}/usr/share
