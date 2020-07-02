@@ -12,16 +12,24 @@ confinement: strict
 adopt-info: pulseaudio
 base: core18
 
+layout:
+  /usr/share/applications:
+    bind: $SNAP/usr/share/applications
+
 environment:
   PATH:                      ${SNAP}/usr/sbin:${SNAP}/usr/bin:${SNAP}/sbin:${SNAP}/bin:${PATH}
   LD_LIBRARY_PATH:           ${LD_LIBRARY_PATH}:${SNAP}/usr/lib/pulseaudio:${SNAP}/usr/lib/pulse-11.1/modules/:${SNAP}/lib:${SNAP}/usr/lib:${SNAP}/lib/${SNAPCRAFT_ARCH_TRIPLET}:${SNAP}/usr/lib/${SNAPCRAFT_ARCH_TRIPLET}
   PULSE_DLPATH:              ${SNAP}/usr/lib/pulse-11.1/modules
-  PULSE_CLIENTCONFIG:        ${SNAP_DATA}/etc/pulse/client.conf
   PULSE_RUNTIME_PATH:        /var/run/pulse
   PULSE_SYSTEM:              1
   PULSE_STATE_PATH:          ${SNAP_DATA}/state
-  PULSE_SCRIPT:              ${SNAP_DATA}/etc/pulse/default.pa
+  # PULSE_SCRIPT this used to be default.pa, but docs say that is used only for user mode. we launchc in system mode
+  # Note also that the script file to run is also set in the pulseaudio wrapper
+  # It also seems that setting this var is not sufficient for pulse to run it, so the command arg is needed
+  # and we could probably drop it from here
+  PULSE_SCRIPT:              ${SNAP_DATA}/etc/pulse/system.pa
   PULSE_CONFIG:              ${SNAP_DATA}/etc/pulse/daemon.conf
+  PULSE_CLIENTCONFIG:        ${SNAP_DATA}/etc/pulse/client.conf
   PULSE_CONFIG_PATH:         ${SNAP_DATA}/var/lib/pulse
   PULSE_ALSA_PATHS_DIR:      ${SNAP_DATA}/usr/share/pulseaudio/alsa-mixer
   ALSA_CONFIG_UCM:           ${SNAP_DATA}/usr/share/alsa/ucm
@@ -35,6 +43,9 @@ environment:
   ALSA_MIXER_SIMPLE_MODULES: ${SNAP}/usr/lib/alsa-lib/smixer
   ALSA_MIXER_SIMPLE_MPYTHON: ${SNAP}/usr/lib/alsa-lib/smixer/python/main.py
 
+slots:
+  audio-playback-service:
+    interface: audio-playback
 apps:
   pulseaudio:
           #after:
@@ -44,81 +55,37 @@ apps:
     command: bin/pulseaudio
     daemon: simple
     slots:
-      - service
-
+      - audio-playback-service
+    plugs: [ alsa ]
   alsamixer:
     command: usr/bin/alsamixer 
-    plugs: [ client, network, alsa ]
-
+    plugs: [ audio-playback, network, alsa ]
   amixer:
     command: usr/bin/amixer 
-    plugs: [ client, network, alsa ]
+    plugs: [ audio-playback, network, alsa ]
   aplay:
     command: usr/bin/aplay
-    plugs: [ client, network, alsa ]
-  pacmd:
-    command: bin/client-wrapper usr/bin/pacmd
-    plugs: [ client, network ]
-
+    plugs: [ audio-playback, network, alsa ]
   pactl:
     command: bin/client-wrapper usr/bin/pactl
     plugs:
-      - client
+      - audio-playback
       - network
-
   paplay:
     command: bin/client-wrapper usr/bin/paplay
     plugs:
-      - client
+      - audio-playback
       - home
       - network
-
   parec:
     command: bin/client-wrapper usr/bin/parec
     plugs:
-      - client
+      - audio-playback
       - home
       - network
 
   config:
     command: bin/config
-
-    #  init-speaker:
-    #command: bin/init-speaker.sh
-    #adapter: none
-    #daemon: oneshot
-    #plugs:
-    #  - i2c
-    #  - gpio
-
-    #play-music:
-    #after:
-    #  - init-speaker
-    #command: bin/play_music.sh
-    #adapter: none
-    #daemon: oneshot
-    #plugs:
-    #  - i2c
-
-    # record-music:
-    #after:
-    #  - init-speaker
-    #  - play-music
-    #command: bin/record_music.sh
-    #adapter: none
-    #daemon: oneshot
-    #plugs:
-    #  - i2c
-    #  - gpio
-
-
-slots:
-  service:
-    interface: pulseaudio
-
-plugs:
-  client:
-    interface: pulseaudio
 
 parts:
   glue:
@@ -242,9 +209,7 @@ parts:
       - usr/bin/jq
       - usr/lib
       - usr/share/pulseaudio
-      - usr/share/bash-completion/completions/pacmd
       - usr/bin/pacmd
-
 
   # part to simulate pulseaudio and alsa dependencies, to trigger auto builds
   # as we build from source,we don't actually consume binaries except libasound2-plugins
