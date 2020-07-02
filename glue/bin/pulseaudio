@@ -9,6 +9,7 @@ EXTRA_ARGS=
 if [ -e $SNAP_DATA/config/debug ] ; then
     EXTRA_ARGS="$EXTRA_ARGS -vvvv"
     export LIBASOUND_DEBUG=1
+    env | sort
 fi
 
 # on some hw, hw requires init steps before pulseaudio can be started
@@ -19,12 +20,13 @@ if [ -n "${DELAY}" ]; then
   sleep ${DELAY} || true
 fi
 
+# PULSE_SCRIPT is set (snapcraft.yaml) to the system.pa file, but that alone does not work so we need -F
 $SNAP/usr/bin/pulseaudio \
     --exit-idle-time=-1 \
     --disallow-exit=yes \
     --disallow-module-loading \
     --system \
-    -F ${SNAP_DATA}/etc/pulse/default.pa \
-    -p ${SNAP}/usr/lib/pulse-11.1/modules \
+    -F ${SNAP_DATA}/etc/pulse/system.pa \
     -n \
     $EXTRA_ARGS
+
