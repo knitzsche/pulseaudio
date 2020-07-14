@@ -24,9 +24,12 @@ fi
 $SNAP/usr/bin/pulseaudio \
     --exit-idle-time=-1 \
     --disallow-exit=yes \
-    --disallow-module-loading \
     --system \
     -F ${SNAP_DATA}/etc/pulse/system.pa \
     -n \
     $EXTRA_ARGS
 
+# Although this is recommended by pa docs [1], the docs also say this
+# option breaks usb and bt hot plugging, which I found to be true at least for bt a2dp
+# [1] https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/SystemWide/ 
+    #--disallow-module-loading \
