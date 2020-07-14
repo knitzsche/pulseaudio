@@ -47,6 +47,12 @@ slots:
   audio-playback-service:
     interface: audio-playback
 
+plugs:
+  bluetooth-control:
+    interface: bluetooth-control
+  bluez:
+    interface: bluez
+
 apps:
   pulseaudio:
     command: bin/pulseaudio
@@ -156,7 +162,7 @@ parts:
       - --disable-orc
       - --disable-gconf
       - --disable-bluez4
-      - --disable-bluez5
+      #- --disable-bluez5
       - --disable-esound
       - --disable-adrian-aec
       - --disable-gtk3
@@ -191,6 +197,7 @@ parts:
       - libx11-6
       - libx11-xcb1
       - jq
+      - pulseaudio-module-bluetooth
     stage:
       - etc
       - lib
@@ -205,11 +212,12 @@ parts:
       - usr/bin/pacmd
       - -etc/pulse/system.pa
       - -etc/pulse/daemon.conf
+      - -etc/pulse/client.conf
 
   custom:
     after:
       - pulseaudio
-    source: config
+    source: custom
     plugin: dump
 
   libasound2:
