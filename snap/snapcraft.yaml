@@ -1,12 +1,8 @@
 name: test-pulseaudio
-summary: PulseAudio sound server
+summary: A pulseaudio sound server
 description: |
-  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
-  WIN32 systems. It is a drop in replacement for the ESD sound server with
-  much better latency, mixing/re-sampling quality and overall architecture.
+  PulseAudio as a snap that runs in system mode. 
 
-  Please find the source code for this snap at:
-  https://code.launchpad.net/~snappy-hwe-team/snappy-hwe-snaps/+git/pulseaudio
 grade: stable
 confinement: strict
 adopt-info: pulseaudio
@@ -17,37 +13,58 @@ layout:
     bind: $SNAP/usr/share/applications
 
 environment:
-  PATH:                      ${SNAP}/usr/sbin:${SNAP}/usr/bin:${SNAP}/sbin:${SNAP}/bin:${PATH}
-  LD_LIBRARY_PATH:           ${LD_LIBRARY_PATH}:${SNAP}/usr/lib/pulseaudio:${SNAP}/usr/lib/pulse-11.1/modules/:${SNAP}/lib:${SNAP}/usr/lib:${SNAP}/lib/${SNAPCRAFT_ARCH_TRIPLET}:${SNAP}/usr/lib/${SNAPCRAFT_ARCH_TRIPLET}
-  PULSE_DLPATH:              ${SNAP}/usr/lib/pulse-11.1/modules
-  PULSE_RUNTIME_PATH:        /var/run/pulse
-  PULSE_SYSTEM:              1
-  PULSE_STATE_PATH:          ${SNAP_DATA}/state
+  PATH: ${SNAP}/usr/sbin:${SNAP}/usr/bin:${SNAP}/sbin:${SNAP}/bin:${PATH}
+  LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}:${SNAP}/usr/lib/pulseaudio:${SNAP}/usr/lib/pulse-11.1/modules/:${SNAP}/lib:${SNAP}/usr/lib:${SNAP}/lib/${SNAPCRAFT_ARCH_TRIPLET}:${SNAP}/usr/lib/${SNAPCRAFT_ARCH_TRIPLET}
+  PULSE_DLPATH: ${SNAP}/usr/lib/pulse-11.1/modules
+  PULSE_RUNTIME_PATH: /var/run/pulse
+  PULSE_SYSTEM: 1
+  PULSE_STATE_PATH: ${SNAP_DATA}/state
   # PULSE_SCRIPT this used to be default.pa, but docs say that is used only for user mode. we launchc in system mode
   # Note also that the script file to run is also set in the pulseaudio wrapper
   # It also seems that setting this var is not sufficient for pulse to run it, so the command arg is needed
   # and we could probably drop it from here
-  PULSE_SCRIPT:              ${SNAP_DATA}/etc/pulse/system.pa
-  PULSE_CONFIG:              ${SNAP_DATA}/etc/pulse/daemon.conf
-  PULSE_CLIENTCONFIG:        ${SNAP_DATA}/etc/pulse/client.conf
-  PULSE_CONFIG_PATH:         ${SNAP_DATA}/var/lib/pulse
-  PULSE_ALSA_PATHS_DIR:      ${SNAP_DATA}/usr/share/pulseaudio/alsa-mixer
-  ALSA_CONFIG_UCM:           ${SNAP_DATA}/usr/share/alsa/ucm
-  ALSA_CONFIG_TPLG:          ${SNAP_DATA}/usr/share/alsa/topology
-  ALSA_CONFIG_PATH:          ${SNAP_DATA}/usr/share/alsa/alsa.conf
-  ALSA_MIXER_SIMPLE:         ${SNAP_DATA}/usr/share/alsa/smixer.conf
-  ALSA_CONFIG_DIR:           ${SNAP_DATA}/usr/share/alsa/
-  ALSA_CONFIG_UCM_VAR:       ${SNAP_DATA}/usr/share/alsa/ucm
-  ALSA_CONFIG_TPLG_VAR:      ${SNAP_DATA}/usr/share/alsa/topology
-  ALSA_PLUGIN_DIR:           ${SNAP}/usr/lib/alsa-lib
+  PULSE_SCRIPT: ${SNAP_DATA}/etc/pulse/system.pa
+  PULSE_CONFIG: ${SNAP_DATA}/etc/pulse/daemon.conf
+  PULSE_CLIENTCONFIG: ${SNAP_DATA}/etc/pulse/client.conf
+  PULSE_CONFIG_PATH: ${SNAP_DATA}/var/lib/pulse
+  PULSE_ALSA_PATHS_DIR: ${SNAP_DATA}/usr/share/pulseaudio/alsa-mixer
+  ALSA_CONFIG_UCM: ${SNAP_DATA}/usr/share/alsa/ucm
+  ALSA_CONFIG_TPLG: ${SNAP_DATA}/usr/share/alsa/topology
+  ALSA_CONFIG_PATH: ${SNAP_DATA}/usr/share/alsa/alsa.conf
+  ALSA_MIXER_SIMPLE: ${SNAP_DATA}/usr/share/alsa/smixer.conf
+  ALSA_CONFIG_DIR: ${SNAP_DATA}/usr/share/alsa/
+  ALSA_CONFIG_UCM_VAR: ${SNAP_DATA}/usr/share/alsa/ucm
+  ALSA_CONFIG_TPLG_VAR: ${SNAP_DATA}/usr/share/alsa/topology
+  ALSA_PLUGIN_DIR: ${SNAP}/usr/lib/alsa-lib
   ALSA_MIXER_SIMPLE_MODULES: ${SNAP}/usr/lib/alsa-lib/smixer
   ALSA_MIXER_SIMPLE_MPYTHON: ${SNAP}/usr/lib/alsa-lib/smixer/python/main.py
 
 slots:
   audio-playback-service:
     interface: audio-playback
+  audio-record-service:
+    interface: audio-record
+  dbus:
+    interface: dbus
+    bus: system
+    name: org.pulseaudio.Server
+  tools:
+    interface: content
+    content: tools 
+    source:
+      read:
+        - $SNAP/usr/bin
+        - $SNAP/usr/lib
 
 plugs:
+  alsa:
+    interface: alsa
+  audio-playback:
+    interface: audio-playback
+  audio-record:
+    interface: audio-record
+  network:
+    interface: network
   bluetooth-control:
     interface: bluetooth-control
   bluez:
@@ -57,35 +74,25 @@ apps:
   pulseaudio:
     command: bin/pulseaudio
     daemon: simple
-    slots:
-      - audio-playback-service
-    plugs: [ alsa ]
   alsamixer:
-    command: usr/bin/alsamixer 
-    plugs: [ audio-playback, network, alsa ]
+    command: usr/bin/alsamixer
   amixer:
-    command: usr/bin/amixer 
-    plugs: [ audio-playback, network, alsa ]
+    command: usr/bin/amixer
   aplay:
     command: usr/bin/aplay
-    plugs: [ audio-playback, network, alsa ]
+  arecord:
+    command: usr/bin/arecord
   pactl:
     command: bin/client-wrapper usr/bin/pactl
-    plugs:
-      - audio-playback
-      - network
   paplay:
     command: bin/client-wrapper usr/bin/paplay
-    plugs:
-      - audio-playback
-      - home
-      - network
+  # we launch pulseaudio in system mode, not user, and pacmd is not available in system mode
+  #pacmd:
+    #command: bin/client-wrapper usr/bin/pacmd
   parec:
     command: bin/client-wrapper usr/bin/parec
-    plugs:
-      - audio-playback
-      - home
-      - network
+  speaker-test:
+    command: usr/bin/speaker-test
   config:
     command: bin/config
 
@@ -170,7 +177,7 @@ parts:
       - --disable-systemd-login
       - --without-caps
       - --disable-webrtc-aec
-      - --disable-dbus
+        #- --disable-dbus
       - --disable-oss-output
       - --disable-oss-wrapper
       - --disable-jack
@@ -209,11 +216,15 @@ parts:
       - usr/bin/jq
       - usr/lib
       - usr/share/pulseaudio
-      - usr/bin/pacmd
       - -etc/pulse/system.pa
       - -etc/pulse/daemon.conf
       - -etc/pulse/client.conf
+      #- usr/bin/pacmd
+      # Suppresed pa/conf files must be installed through the "custom" part
 
+  # Add files to custom/ to overide files from build.
+  # Files are dumped, so be sure the are in the correct directory location.
+  # The files must also be suppressed during staging of the other part.
   custom:
     after:
       - pulseaudio
@@ -226,6 +237,6 @@ parts:
       - libasound2
       - libasound2-plugin-smixer
     organize:
-       usr/lib/*/alsa-lib/: usr/lib/
+      usr/lib/*/alsa-lib/: usr/lib/
     stage:
       - usr/lib/alsa-lib
