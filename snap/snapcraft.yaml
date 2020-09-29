@@ -93,8 +93,6 @@ apps:
     command: bin/client-wrapper usr/bin/parec
   speaker-test:
     command: usr/bin/speaker-test
-  config:
-    command: bin/config
 
 parts:
   glue:
